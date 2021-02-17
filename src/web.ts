@@ -8,7 +8,8 @@ import {
 
 declare var window: any;
 
-export class FirebaseRemoteConfigWeb extends WebPlugin
+export class FirebaseRemoteConfigWeb
+  extends WebPlugin
   implements FirebaseRemoteConfigPlugin {
   public readonly ready: Promise<any>;
   private readyResolver: Function;
@@ -152,62 +153,40 @@ export class FirebaseRemoteConfigWeb extends WebPlugin
   }
 
   getBoolean(options: RCValueOption): Promise<RCReturnData> {
-    return new Promise(async (resolve, reject) => {
-      await this.ready;
-
-      if (!this.remoteConfigRef) {
-        reject(
-          "Remote config is not initialized. Make sure initialize() is called at first."
-        );
-        return;
-      }
-
-      resolve(this.remoteConfigRef.getValue(options.key).asBoolean());
-    });
+    return this.getValue(options, "Boolean");
   }
 
-  getByteArray(options: RCValueOption): Promise<RCReturnDataArray> {
-    return new Promise(async (resolve, reject) => {
-      await this.ready;
-
-      if (!this.remoteConfigRef) {
-        reject(
-          "Remote config is not initialized. Make sure initialize() is called at first."
-        );
-        return;
-      }
-
-      resolve(this.remoteConfigRef.getValue(options.key).asString());
-    });
+  getByteArray(options: RCValueOption): Promise<RCReturnData> {
+    return this.getString(options);
   }
+
   getNumber(options: RCValueOption): Promise<RCReturnData> {
-    return new Promise(async (resolve, reject) => {
-      await this.ready;
-
-      if (!this.remoteConfigRef) {
-        reject(
-          "Remote config is not initialized. Make sure initialize() is called at first."
-        );
-        return;
-      }
-
-      resolve(this.remoteConfigRef.getValue(options.key).asNumber());
-    });
+    return this.getValue(options, "Number");
   }
 
   getString(options: RCValueOption): Promise<RCReturnData> {
-    return new Promise(async (resolve, reject) => {
-      await this.ready;
+    return this.getValue(options, "String");
+  }
 
-      if (!this.remoteConfigRef) {
-        reject(
-          "Remote config is not initialized. Make sure initialize() is called at first."
-        );
-        return;
-      }
+  private async getValue(
+    options: RCValueOption,
+    format: "String" | "Number" | "Boolean" = null
+  ): Promise<RCReturnData> {
+    await this.ready;
 
-      resolve(this.remoteConfigRef.getValue(options.key).asString());
-    });
+    if (!this.remoteConfigRef) {
+      throw new Error(
+        "Remote config is not initialized. Make sure initialize() is called at first."
+      );
+    }
+
+    const retVal = this.remoteConfigRef.getValue(options.key);
+
+    return {
+      key: options.key,
+      value: format ? retVal[`as${format}`]() : retVal._value,
+      source: retVal._source,
+    };
   }
 
   get remoteConfig() {
